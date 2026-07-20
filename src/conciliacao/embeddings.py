@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import numpy as np
 
-_modelo = None
-
-
-def obter_modelo():
-    global _modelo
-    if _modelo is None:
-        from sentence_transformers import SentenceTransformer
-
-        _modelo = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
-    return _modelo
-
 
 def embutir_textos(textos: list[str]) -> np.ndarray:
-    modelo = obter_modelo()
-    return modelo.encode(textos, normalize_embeddings=True)
+    """Vetoriza textos por similaridade de n-gramas de caracteres (TF-IDF).
+
+    Não é um embedding semântico de verdade — é uma aproximação leve (sem
+    torch/modelo pesado) adequada para o caso de uso: descrições que divergem
+    na formatação/grafia (ex: "PAG*FORNEC ABC" vs "Fornecedor ABC Ltda"), não
+    em significado. Precisa ser chamada com todos os textos do lote de uma vez
+    (banco + ERP juntos), já que o vocabulário é ajustado a cada chamada.
+    """
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
+    vetorizador = TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 4))
+    return vetorizador.fit_transform(textos).toarray()

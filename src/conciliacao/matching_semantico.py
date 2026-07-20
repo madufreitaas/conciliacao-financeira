@@ -30,10 +30,14 @@ def match_semantico(
 
     descricoes_banco = [c[0].descricao for c in candidatos]
     descricoes_erp = [c[1].descricao for c in candidatos]
-    embeddings_banco = embutir(descricoes_banco)
-    embeddings_erp = embutir(descricoes_erp)
+    # embute banco+erp juntos numa única chamada: o vocabulário do TF-IDF é
+    # ajustado por chamada, então precisa ver os dois lados pra gerar vetores
+    # comparáveis entre si.
+    todos_embeddings = np.asarray(embutir(descricoes_banco + descricoes_erp))
+    embeddings_banco = todos_embeddings[: len(descricoes_banco)]
+    embeddings_erp = todos_embeddings[len(descricoes_banco) :]
 
-    similaridades = np.sum(np.asarray(embeddings_banco) * np.asarray(embeddings_erp), axis=1)
+    similaridades = np.sum(embeddings_banco * embeddings_erp, axis=1)
 
     pares_ordenados = sorted(
         zip(candidatos, similaridades), key=lambda item: item[1], reverse=True

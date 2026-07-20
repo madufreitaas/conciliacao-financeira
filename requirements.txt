@@ -3,7 +3,7 @@ faker
 pydantic
 openpyxl
 pytest
-sentence-transformers
+scikit-learn
 groq
 python-dotenv
 streamlit

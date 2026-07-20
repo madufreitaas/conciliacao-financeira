@@ -18,9 +18,12 @@ O matching é feito em camadas, cada uma pegando o que sobrou da anterior:
 
 1. **Match exato** — mesmo valor + data (+ referência, quando existe).
 2. **Match por janela** — mesmo valor, data com defasagem de até N dias.
-3. **Match semântico** — embeddings locais (`sentence-transformers`) comparam a
-   descrição dos lançamentos que sobraram, casando por similaridade dentro de uma
-   tolerância de valor/data mais ampla.
+3. **Match semântico** — similaridade de n-gramas de caracteres (TF-IDF, via
+   scikit-learn) compara a descrição dos lançamentos que sobraram, casando por
+   similaridade dentro de uma tolerância de valor/data mais ampla. Não é um
+   embedding semântico "de verdade" — é uma aproximação leve o suficiente pra
+   rodar em ambientes com pouca memória, adequada pro caso de uso (descrições
+   que divergem na formatação, não no significado).
 4. O que não casa em nenhuma camada vira **pendência classificada**
    (`divergencia_valor`, `orfao_banco`, `orfao_erp`, `duplicidade`) com uma
    explicação em linguagem natural gerada por LLM (Groq, `llama-3.3-70b-versatile`).
@@ -35,8 +38,8 @@ extrato_erp.csv ────┘
 
 - **Python** + **Pandas** — ingestão e normalização.
 - **Pydantic** — modelos de dados (`Lancamento`, `Pendencia`, `ResultadoConciliacao`).
-- **sentence-transformers** (`paraphrase-multilingual-MiniLM-L12-v2`) — embeddings
-  locais para o matching semântico, sem custo de API.
+- **scikit-learn** (TF-IDF + similaridade de n-gramas) — matching semântico leve,
+  sem custo de API e sem depender de modelos pesados (torch).
 - **Groq** (`llama-3.3-70b-versatile`) — geração de explicações em linguagem natural,
   free tier.
 - **openpyxl** — relatório final consolidado em `.xlsx`.
@@ -102,7 +105,7 @@ src/conciliacao/
   models.py               # Pydantic: Lancamento, Pendencia, MatchSemantico, ResultadoConciliacao
   ingestao.py              # leitura CSV/XLSX + normalização de datas/valores/descrições
   matching.py               # camada 1 (exato), camada 2 (janela) e classificação de pendências
-  embeddings.py              # carrega o modelo de embeddings local
+  embeddings.py              # vetorização TF-IDF (n-gramas de caracteres)
   matching_semantico.py       # camada 3 (semântica)
   explicacao.py                 # geração de explicação em LN via Groq
   persistencia.py                # histórico de execuções (Supabase)
@@ -134,6 +137,11 @@ tests/                          # pytest — cobre ingestão, matching e explica
   vez de duplicidade — heurística suficiente para o MVP, não detecção completa.
 - O "tempo manual estimado" do relatório é uma estimativa documentada (minutos por
   lançamento revisado manualmente), não uma medição real.
+- O matching semântico usa TF-IDF (similaridade textual), não embeddings semânticos
+  de um modelo treinado — troca feita para caber no free tier do Render (512MB de
+  RAM), que não comportava `sentence-transformers`/`torch`. Funciona bem para
+  divergência de formatação (o caso mais comum aqui), mas não captura similaridade
+  de significado entre descrições muito diferentes na escrita.
 
 ## Deploy
 
