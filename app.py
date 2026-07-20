@@ -45,6 +45,14 @@ if not os.environ.get("GROQ_API_KEY"):
     )
 
 if st.button("Rodar conciliação", disabled=not (arquivo_banco and arquivo_erp)):
+    if arquivo_banco is None or arquivo_erp is None:
+        st.warning(
+            "Não consegui ler os arquivos enviados (pode acontecer logo depois do "
+            "app acordar de um período inativo). Tente clicar em \"Rodar "
+            "conciliação\" de novo."
+        )
+        st.stop()
+
     with st.spinner("Conciliando..."):
         with tempfile.TemporaryDirectory() as tmpdir:
             path_banco = Path(tmpdir) / arquivo_banco.name
