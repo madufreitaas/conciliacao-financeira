@@ -38,10 +38,10 @@ with col1:
 with col2:
     arquivo_erp = st.file_uploader("Extrato ERP", type=["csv", "xlsx"])
 
-if not os.environ.get("GROQ_API_KEY"):
+if not os.environ.get("OPENROUTER_API_KEY"):
     st.info(
-        "GROQ_API_KEY não configurada — as pendências vão sair sem explicação em "
-        "linguagem natural (só com o detalhe técnico)."
+        "OPENROUTER_API_KEY não configurada — as pendências vão sair sem explicação "
+        "em linguagem natural (só com o detalhe técnico)."
     )
 
 if st.button("Rodar conciliação", disabled=not (arquivo_banco and arquivo_erp)):

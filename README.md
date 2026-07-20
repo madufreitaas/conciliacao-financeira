@@ -26,11 +26,13 @@ O matching é feito em camadas, cada uma pegando o que sobrou da anterior:
    que divergem na formatação, não no significado).
 4. O que não casa em nenhuma camada vira **pendência classificada**
    (`divergencia_valor`, `orfao_banco`, `orfao_erp`, `duplicidade`) com uma
-   explicação em linguagem natural gerada por LLM (Groq, `llama-3.3-70b-versatile`).
+   explicação em linguagem natural gerada por LLM (OpenRouter,
+   `meta-llama/llama-3.3-70b-instruct`) — todas as pendências são explicadas numa
+   única chamada em lote, não uma por uma, pra não esbarrar em limite de taxa.
 
 ```
 extrato_banco.csv ─┐
-                    ├─► ingestão/normalização (Pandas) ─► match exato ─► match janela ─► match semântico ─► pendências + explicação (Groq) ─► relatório Excel
+                    ├─► ingestão/normalização (Pandas) ─► match exato ─► match janela ─► match semântico ─► pendências + explicação (OpenRouter) ─► relatório Excel
 extrato_erp.csv ────┘
 ```
 
@@ -40,8 +42,8 @@ extrato_erp.csv ────┘
 - **Pydantic** — modelos de dados (`Lancamento`, `Pendencia`, `ResultadoConciliacao`).
 - **scikit-learn** (TF-IDF + similaridade de n-gramas) — matching semântico leve,
   sem custo de API e sem depender de modelos pesados (torch).
-- **Groq** (`llama-3.3-70b-versatile`) — geração de explicações em linguagem natural,
-  free tier.
+- **OpenRouter** (`meta-llama/llama-3.3-70b-instruct`) — geração de explicações em
+  linguagem natural, em uma única chamada em lote para todas as pendências.
 - **openpyxl** — relatório final consolidado em `.xlsx`.
 - **Streamlit** — interface de upload e visualização.
 - **Supabase** (Postgres) — histórico de execuções (opcional).
@@ -54,11 +56,12 @@ extrato_erp.csv ────┘
 pip install -r requirements.txt
 ```
 
-### 2. Configurar a chave do Groq (opcional, mas recomendado)
-Crie uma chave grátis em [console.groq.com](https://console.groq.com) e copie
-`.env.example` para `.env`, preenchendo `GROQ_API_KEY=sua_chave`. Sem a chave, o
-pipeline funciona normalmente — só não gera a explicação em linguagem natural das
-pendências (fica só o detalhe técnico).
+### 2. Configurar a chave do OpenRouter (opcional, mas recomendado)
+Crie uma conta e uma chave em [openrouter.ai](https://openrouter.ai/keys) (precisa de
+créditos — o modelo usado é pago, mas barato) e copie `.env.example` para `.env`,
+preenchendo `OPENROUTER_API_KEY=sua_chave`. Sem a chave, o pipeline funciona
+normalmente — só não gera a explicação em linguagem natural das pendências (fica só
+o detalhe técnico).
 
 ### 3. Configurar o histórico no Supabase (opcional)
 Rode o SQL de `docs/schema.sql` uma vez no **SQL Editor** do seu projeto Supabase
@@ -107,7 +110,7 @@ src/conciliacao/
   matching.py               # camada 1 (exato), camada 2 (janela) e classificação de pendências
   embeddings.py              # vetorização TF-IDF (n-gramas de caracteres)
   matching_semantico.py       # camada 3 (semântica)
-  explicacao.py                 # geração de explicação em LN via Groq
+  explicacao.py                 # geração de explicação em LN via OpenRouter (lote)
   persistencia.py                # histórico de execuções (Supabase)
   relatorio.py                   # monta o relatório Excel consolidado
   pipeline.py                     # orquestra ingestão -> matching -> resultado
@@ -142,6 +145,11 @@ tests/                          # pytest — cobre ingestão, matching e explica
   RAM), que não comportava `sentence-transformers`/`torch`. Funciona bem para
   divergência de formatação (o caso mais comum aqui), mas não captura similaridade
   de significado entre descrições muito diferentes na escrita.
+- As explicações são geradas numa única chamada em lote (todas as pendências de
+  uma vez), não uma por pendência — muito mais rápido e evita bater limite de taxa,
+  mas se essa chamada falhar (após as tentativas automáticas), nenhuma pendência
+  daquela execução recebe explicação (fica só o `detalhe` técnico), em vez de
+  falhar parcialmente.
 
 ## Deploy
 
@@ -154,7 +162,7 @@ local ficar aberto:
    `render.yaml` já presente na raiz do projeto e configura o Web Service
    automaticamente (build, start command, porta).
 4. Preencha as variáveis de ambiente no painel do Render (não vêm do repositório,
-   por segurança): `GROQ_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+   por segurança): `OPENROUTER_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
 5. Deploy. A URL pública fica disponível no painel do Render.
 
 ## Fora de escopo (v1)

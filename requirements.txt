@@ -4,7 +4,7 @@ pydantic
 openpyxl
 pytest
 scikit-learn
-groq
+openai
 python-dotenv
 streamlit
 supabase
