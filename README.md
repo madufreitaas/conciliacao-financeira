@@ -34,10 +34,27 @@ O matching é feito em camadas, cada uma pegando o que sobrou da anterior:
    `meta-llama/llama-3.3-70b-instruct`) — todas as pendências são explicadas numa
    única chamada em lote, não uma por uma, pra não esbarrar em limite de taxa.
 
-```
-extrato_banco.csv ─┐
-                    ├─► ingestão/normalização (Pandas) ─► match exato ─► match janela ─► match semântico ─► pendências + explicação (OpenRouter) ─► relatório Excel
-extrato_erp.csv ────┘
+```mermaid
+flowchart LR
+    A[extrato_banco.csv] --> C[Ingestão e normalização<br/>Pandas]
+    B[extrato_erp.csv] --> C
+
+    C --> D{Camada 1<br/>Match exato}
+    D -- sobrou --> E{Camada 2<br/>Match por janela}
+    E -- sobrou --> F{Camada 3<br/>Match semântico<br/>TF-IDF}
+
+    D -- casou --> M[Matches]
+    E -- casou --> M
+    F -- casou --> M
+
+    F -- sobrou --> G[Pendências classificadas]
+    G --> H[Explicação em lote<br/>OpenRouter]
+
+    M --> I[Relatório Excel]
+    H --> I
+
+    I --> J[Interface Streamlit]
+    I --> K[(Histórico<br/>Supabase)]
 ```
 
 ## Stack
