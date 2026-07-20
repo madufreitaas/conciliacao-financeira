@@ -191,3 +191,7 @@ local ficar aberto:
 - Conciliação multi-moeda.
 - Integração direta com banco (Open Finance) — v1 usa upload de arquivo.
 - Aprendizado contínuo (feedback loop de correções do usuário).
+
+## Licença
+
+[MIT](LICENSE)
