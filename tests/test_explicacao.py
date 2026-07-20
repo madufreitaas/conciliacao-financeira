@@ -81,7 +81,7 @@ def test_gerar_explicacoes_degrada_sem_quebrar_se_lote_falhar(monkeypatch):
     monkeypatch.setenv("OPENROUTER_API_KEY", "chave-fake-para-teste")
 
     def chamar_llm_falha(prompt: str) -> str:
-        raise RuntimeError("falha simulada do Groq")
+        raise RuntimeError("falha simulada do OpenRouter")
 
     pendencias = [_pendencia(id="B1"), _pendencia(id="B2")]
     resultado = gerar_explicacoes(pendencias, chamar_llm=chamar_llm_falha)

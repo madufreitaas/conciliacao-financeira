@@ -3,6 +3,10 @@
 Um agente que concilia extrato bancário e ERP sem precisar de match exato — e explica
 cada pendência como um analista explicaria.
 
+**App publicado:** [conciliacao-financeira-mt9m.onrender.com](https://conciliacao-financeira-mt9m.onrender.com)
+*(plano gratuito do Render — o serviço "dorme" após 15 min sem acesso; o primeiro
+acesso depois disso pode levar 30-50s pra acordar.)*
+
 ## O problema
 
 Toda empresa que opera com múltiplas fontes de lançamento financeiro (extrato
@@ -128,9 +132,9 @@ tests/                          # pytest — cobre ingestão, matching e explica
 |---|---|
 | Match exato | 207 |
 | Match por janela de data | 17 |
-| Match semântico | 5 |
-| **Total conciliado automaticamente** | **90,16%** |
-| Pendências restantes | 33 (12 divergência de valor, 8 órfãos banco, 13 órfãos ERP) |
+| Match semântico | 11 |
+| **Total conciliado automaticamente** | **92,52%** |
+| Pendências restantes | 27 (6 divergência de valor, 8 órfãos banco, 13 órfãos ERP) |
 
 ## Limitações conhecidas
 
