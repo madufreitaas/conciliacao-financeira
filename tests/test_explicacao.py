@@ -57,3 +57,22 @@ def test_gerar_explicacoes_com_chave_preenche_explicacao(monkeypatch):
 
     assert resultado[0].explicacao == "Texto explicativo em português."
     assert pendencias[0].explicacao is None  # original não é mutado
+
+
+def test_gerar_explicacoes_continua_apos_falha_em_uma_pendencia(monkeypatch):
+    monkeypatch.setenv("GROQ_API_KEY", "chave-fake-para-teste")
+
+    chamadas = []
+
+    def chamar_llm_falha_na_primeira(prompt: str) -> str:
+        chamadas.append(prompt)
+        if len(chamadas) == 1:
+            raise RuntimeError("falha simulada do Groq")
+        return "Explicação da segunda pendência."
+
+    pendencias = [_pendencia(), _pendencia()]
+    resultado = gerar_explicacoes(pendencias, chamar_llm=chamar_llm_falha_na_primeira)
+
+    assert len(chamadas) == 2  # a segunda pendência foi processada mesmo após a falha na primeira
+    assert resultado[0].explicacao is None
+    assert resultado[1].explicacao == "Explicação da segunda pendência."

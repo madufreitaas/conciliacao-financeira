@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import os
+import time
 from typing import Callable
 
 from conciliacao.models import Pendencia
 
 _MODELO = "llama-3.3-70b-versatile"
+_MAX_TENTATIVAS_RATE_LIMIT = 6
+_ESPERA_MAXIMA_SEGUNDOS = 300  # teto por tentativa, evita esperar por horas de uma vez
 
 _avisou_chave_ausente = False
 
@@ -37,13 +40,31 @@ def _cliente_groq():
 
 
 def chamar_groq(prompt: str) -> str:
+    from groq import RateLimitError
+
     cliente = _cliente_groq()
-    resposta = cliente.chat.completions.create(
-        model=_MODELO,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3,
+    for tentativa in range(1, _MAX_TENTATIVAS_RATE_LIMIT + 1):
+        try:
+            resposta = cliente.chat.completions.create(
+                model=_MODELO,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.3,
+            )
+            return resposta.choices[0].message.content.strip()
+        except RateLimitError as exc:
+            espera = min(
+                float(exc.response.headers.get("retry-after", 15)),
+                _ESPERA_MAXIMA_SEGUNDOS,
+            )
+            print(
+                f"Groq: limite de taxa atingido, aguardando {espera:.0f}s "
+                f"(tentativa {tentativa}/{_MAX_TENTATIVAS_RATE_LIMIT})..."
+            )
+            time.sleep(espera + 1)
+
+    raise RuntimeError(
+        f"Groq: limite de taxa persistente após {_MAX_TENTATIVAS_RATE_LIMIT} tentativas."
     )
-    return resposta.choices[0].message.content.strip()
 
 
 def gerar_explicacao(pendencia: Pendencia, chamar_llm: Callable[[str], str] = chamar_groq) -> str:
@@ -65,7 +86,12 @@ def gerar_explicacoes(
             _avisou_chave_ausente = True
         return pendencias
 
-    return [
-        p.model_copy(update={"explicacao": gerar_explicacao(p, chamar_llm)})
-        for p in pendencias
-    ]
+    resultado = []
+    for p in pendencias:
+        try:
+            explicacao = gerar_explicacao(p, chamar_llm)
+        except Exception as exc:
+            print(f"Aviso: falha ao gerar explicação para pendência {p.tipo}: {exc}")
+            explicacao = p.explicacao
+        resultado.append(p.model_copy(update={"explicacao": explicacao}))
+    return resultado
