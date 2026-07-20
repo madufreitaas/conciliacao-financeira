@@ -1,0 +1,10 @@
+pandas
+faker
+pydantic
+openpyxl
+pytest
+sentence-transformers
+groq
+python-dotenv
+streamlit
+supabase
